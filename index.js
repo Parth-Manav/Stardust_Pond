@@ -51,8 +51,11 @@ function resetDailyData() {
   console.log(`Daily data reset for ${today}`);
 }
 
-cron.schedule('0 0 * * *', () => {
+cron.schedule('0 20 * * *', () => {
   resetDailyData();
+  console.log('🔄 Scheduled reset at 20:00 GMT (5:30 AM GMT+5:30)');
+}, {
+  timezone: 'Etc/GMT'
 });
 
 client.once('ready', async () => {
