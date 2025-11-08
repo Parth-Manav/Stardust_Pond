@@ -164,28 +164,23 @@ client.on('interactionCreate', async (interaction) => {
       fishingData.dailyCount++;
 
       const now = new Date();
-      const dateString = now.toLocaleString('en-US', {
+      const localTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      const dateString = localTime.toLocaleString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        second: '2-digit',
+        timeZone: 'UTC'
       });
+
+      const oldButtonMessageId = fishingData.buttonMessageId;
+      const oldButtonChannelId = fishingData.buttonChannelId;
 
       await interaction.reply({
         content: `${username} has fished! 🐟🎣 at date : ${dateString}  total number of fishing done : ${fishingData.dailyCount}`
       });
-
-      try {
-        if (fishingData.buttonMessageId && fishingData.buttonChannelId) {
-          const channel = await client.channels.fetch(fishingData.buttonChannelId);
-          const oldMessage = await channel.messages.fetch(fishingData.buttonMessageId);
-          await oldMessage.delete();
-        }
-      } catch (error) {
-        console.log('Could not delete old button message:', error.message);
-      }
 
       const row = new ActionRowBuilder()
         .addComponents(
@@ -203,6 +198,17 @@ client.on('interactionCreate', async (interaction) => {
       fishingData.buttonMessageId = newButtonMessage.id;
       fishingData.buttonChannelId = interaction.channelId;
       saveData();
+
+      try {
+        if (oldButtonMessageId && oldButtonChannelId) {
+          const channel = await client.channels.fetch(oldButtonChannelId);
+          const oldMessage = await channel.messages.fetch(oldButtonMessageId);
+          await oldMessage.delete();
+          console.log('✅ Old button message deleted successfully');
+        }
+      } catch (error) {
+        console.log('⚠️ Could not delete old button message:', error.message);
+      }
     }
   }
 });
