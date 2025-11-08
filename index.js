@@ -163,23 +163,11 @@ client.on('interactionCreate', async (interaction) => {
       };
       fishingData.dailyCount++;
 
-      const now = new Date();
-      const localTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-      const dateString = localTime.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'UTC'
-      });
-
       const oldButtonMessageId = fishingData.buttonMessageId;
       const oldButtonChannelId = fishingData.buttonChannelId;
 
       await interaction.reply({
-        content: `${username} has fished! 🐟🎣 at date : ${dateString}  total number of fishing done : ${fishingData.dailyCount}`
+        content: `${username} has fished! 🐟🎣 Total catches today: ${fishingData.dailyCount}`
       });
 
       const row = new ActionRowBuilder()
