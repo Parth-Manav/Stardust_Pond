@@ -14,11 +14,36 @@ const client = new Client({
 
 let fishingData = {
   dailyCount: 0,
-  lastReset: new Date().toDateString(),
+  lastResetTimestamp: Date.now(),
   users: {},
   buttonMessageId: null,
   buttonChannelId: null
 };
+
+function shouldReset() {
+  const now = new Date();
+  const lastReset = new Date(fishingData.lastResetTimestamp);
+  
+  const gmtPlus530Offset = 5.5 * 60 * 60 * 1000;
+  const resetHour = 20;
+  
+  const currentLocalTime = new Date(now.getTime() + gmtPlus530Offset);
+  const lastResetLocalTime = new Date(lastReset.getTime() + gmtPlus530Offset);
+  
+  const currentResetPoint = new Date(currentLocalTime);
+  currentResetPoint.setHours(resetHour, 0, 0, 0);
+  if (currentLocalTime.getHours() < resetHour) {
+    currentResetPoint.setDate(currentResetPoint.getDate() - 1);
+  }
+  
+  const lastResetPoint = new Date(lastResetLocalTime);
+  lastResetPoint.setHours(resetHour, 0, 0, 0);
+  if (lastResetLocalTime.getHours() < resetHour) {
+    lastResetPoint.setDate(lastResetPoint.getDate() - 1);
+  }
+  
+  return currentResetPoint.getTime() > lastResetPoint.getTime();
+}
 
 function loadData() {
   try {
@@ -26,8 +51,14 @@ function loadData() {
       const data = fs.readFileSync(DATA_FILE, 'utf8');
       fishingData = JSON.parse(data);
       
-      const today = new Date().toDateString();
-      if (fishingData.lastReset !== today) {
+      if (fishingData.lastReset && !fishingData.lastResetTimestamp) {
+        fishingData.lastResetTimestamp = Date.now() - (24 * 60 * 60 * 1000);
+        delete fishingData.lastReset;
+        saveData();
+        console.log('Migrated old date format to timestamp format');
+      }
+      
+      if (shouldReset()) {
         resetDailyData();
       }
     }
@@ -45,12 +76,12 @@ function saveData() {
 }
 
 function resetDailyData() {
-  const today = new Date().toDateString();
   fishingData.dailyCount = 0;
-  fishingData.lastReset = today;
+  fishingData.lastResetTimestamp = Date.now();
   fishingData.users = {};
   saveData();
-  console.log(`Daily data reset for ${today}`);
+  const localTime = new Date(Date.now() + (5.5 * 60 * 60 * 1000));
+  console.log(`Daily data reset at ${localTime.toLocaleString('en-US', { timeZone: 'UTC' })}`);
 }
 
 cron.schedule('30 14 * * *', () => {
@@ -113,16 +144,15 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.customId === 'fish_button') {
       const userId = interaction.user.id;
       const username = interaction.member.displayName;
-      const today = new Date().toDateString();
 
-      if (fishingData.lastReset !== today) {
+      if (shouldReset()) {
         resetDailyData();
       }
 
       if (fishingData.users[userId]) {
         await interaction.reply({
-          content: `❌ You've already fished today! Come back tomorrow.`,
-          ephemeral: true
+          content: `❌ You've already fished today! Come back after 8 PM.`,
+          flags: 64
         });
         return;
       }
