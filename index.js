@@ -151,7 +151,7 @@ client.on('interactionCreate', async (interaction) => {
 
       if (fishingData.users[userId]) {
         await interaction.reply({
-          content: `❌ You've already fished today! Come back after 8 PM.`,
+          content: `❌ You've already fished today! Come back tomorrow.`,
           flags: 64
         });
         return;
