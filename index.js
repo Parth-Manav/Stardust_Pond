@@ -15,7 +15,9 @@ const client = new Client({
 let fishingData = {
   dailyCount: 0,
   lastReset: new Date().toDateString(),
-  users: {}
+  users: {},
+  buttonMessageId: null,
+  buttonChannelId: null
 };
 
 function loadData() {
@@ -95,10 +97,15 @@ client.on('interactionCreate', async (interaction) => {
             .setStyle(ButtonStyle.Primary)
         );
 
-      await interaction.reply({
+      const reply = await interaction.reply({
         content: '🎣 Welcome to Stardust Pond — click to fish!',
-        components: [row]
+        components: [row],
+        fetchReply: true
       });
+
+      fishingData.buttonMessageId = reply.id;
+      fishingData.buttonChannelId = interaction.channelId;
+      saveData();
     }
   }
 
@@ -125,7 +132,6 @@ client.on('interactionCreate', async (interaction) => {
         fishedAt: new Date().toISOString()
       };
       fishingData.dailyCount++;
-      saveData();
 
       const now = new Date();
       const dateString = now.toLocaleString('en-US', {
@@ -140,6 +146,33 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.reply({
         content: `${username} has fished! 🐟🎣 at date : ${dateString}  total number of fishing done : ${fishingData.dailyCount}`
       });
+
+      try {
+        if (fishingData.buttonMessageId && fishingData.buttonChannelId) {
+          const channel = await client.channels.fetch(fishingData.buttonChannelId);
+          const oldMessage = await channel.messages.fetch(fishingData.buttonMessageId);
+          await oldMessage.delete();
+        }
+      } catch (error) {
+        console.log('Could not delete old button message:', error.message);
+      }
+
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('fish_button')
+            .setLabel('🎣 Fish!')
+            .setStyle(ButtonStyle.Primary)
+        );
+
+      const newButtonMessage = await interaction.channel.send({
+        content: '🎣 Welcome to Stardust Pond — click to fish!',
+        components: [row]
+      });
+
+      fishingData.buttonMessageId = newButtonMessage.id;
+      fishingData.buttonChannelId = interaction.channelId;
+      saveData();
     }
   }
 });
