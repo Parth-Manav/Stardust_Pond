@@ -105,7 +105,7 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton()) {
     if (interaction.customId === 'fish_button') {
       const userId = interaction.user.id;
-      const username = interaction.user.username;
+      const username = interaction.member.displayName;
       const today = new Date().toDateString();
 
       if (fishingData.lastReset !== today) {
